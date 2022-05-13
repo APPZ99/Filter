@@ -1,78 +1,56 @@
 '''
-    @ author: APPZ99
-    @ description: A PID controller based on python
+Author: APPZ99
+Date: 2022-05-12 21:59:14
+LastEditTime: 2022-05-13 16:17:15
+LastEditors: APPZ99
+Description: 常见数字滤波
 '''
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-class KF_Filter:
+def DrawData():
+    x = np.arange(0.0, 5.0, 0.01)
+    y = np.cos(2 * np.pi * x) + np.random.normal(0, 0.1, 500)
+    #y = np.random.normal(0, 1, 500)
+    plt.plot(x, y, "r")
+    plt.show()
 
-    def __init__(self, KP, KI, KD, exp_alt, true_alt):
+class SinGenerater_c:
 
-        self.kp = KP
-        self.ki = KI
-        self.kd = KD
+    def __init__(self, A, f, fs, phi, t):
 
-        self.true_alt = true_alt
-        self.exp_alt = exp_alt
-        self.pre_alt = self.true_alt + np.random.normal(0, 0.1)
+        self.A = A      # 振幅
+        self.f = f      # 信号频率
+        self.fs = fs    # 采样频率
+        self.phi = phi  # 相位
+        self.t = t      # 采用时间
 
-        self.now_error = 0.0
-        self.last_error = 0.0
-        self.inter = 0.0
-        self.diff = 0.0
-
-        self.acc = 0.0
-        self.vel = 0.0
-        self.aim_alt =0.0
-        self.time_step = 0.1
-        self.meas = 0.0
-        self.KG = 0.8
-
-    def PID_Controller(self):
-
-        self.last_error = self.now_error
-        self.now_error = self.exp_alt - self.pre_alt
-        self.inter += self.now_error
-        self.diff = self.now_error - self.last_error
-        self.aim_alt = self.kp * self.now_error + self.ki * self.inter + self.kd * self.diff
-        self.acc = 2 * (self.aim_alt - self.vel * self.time_step) / (self.time_step ** 2)
-        if self.acc > 20:
-            self.acc = 20
-        elif self.acc < -20:
-            self.acc = -20
-        return self.acc, self.aim_alt
-
-    def KF(self):
-        self.pre_alt = self.pre_alt + self.vel *self.time_step + 0.5 * self.acc * (self.time_step ** 2)
-        self.true_alt = self.true_alt + self.vel * self.time_step + 0.5 * self.acc * (self.time_step ** 2)
-        self.vel = self.vel + self.acc * self.time_step
-        if self.vel >= 20:
-            self.vel = 20
-        if self.vel <= -20:
-            self.vel = -20
-        self.true_alt = self.true_alt + np.random.normal(0,0.1)
-        self.meas = self.true_alt + np.random.normal(0,0.1)
-        self.pre_alt = self.pre_alt + self.KG * (self.meas - self.pre_alt)
-        return self.pre_alt, self.true_alt, self.vel
+        self.Ts = 1 / self.fs    # 采样周期
+        self.n = np.arange(self.t / self.Ts)    # 
+        
+        self.y = self.A * np.sin(2 * np.pi * self.f * self.n * self.Ts + self.phi * (np.pi / 180))
 
 
-pre = []
-true = []
-vel = []
-altitude = KF_Filter(0.2, 0.00005, 0.05, 100, 0)
-for i in range(1,200):
-    acc, aim_alt = altitude.PID_Controller()
-    pre_alt, true_alt, now_vel = altitude.KF()
-    pre.append(pre_alt)
-    true.append(true_alt)
-    vel.append(now_vel)
+    def Noise(self, exp, var, fre):
 
-time = list(range(1, 200))
-plt.plot(time, pre, color='blue', label='pre')
-plt.plot(time, true, color='red',label='true')
-plt.show()
+        self.noise = np.random.normal(exp, var, fre)
+
+        return self.y, self.y + self.noise
 
 
 
+
+
+
+
+
+if __name__ == "__main__":
+
+    fs = 2000
+    sin= SinGenerater_c(2, 1, fs, 0, 10.0)
+    _, y= sin.Noise(0, 0.1, fs * 10)
+    print(np.shape(y)[0])
+    x = np.arange(0.0, 10, 1/fs)
+    plt.plot(x, y, "r")
+    plt.show()
